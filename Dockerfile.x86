@@ -1,0 +1,109 @@
+FROM ubuntu:16.04
+
+#########################################################3
+###
+###    SYSTEM DEPENDENCIES
+###
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y apt-utils curl xauth unzip software-properties-common libnss3-dev libgconf-2-4 nodejs npm scrot xvfb
+
+RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y --force-yes expect git wget libc6-i386 lib32stdc++6 lib32gcc1 lib32ncurses5 lib32z1 python curl libqt5widgets5 
+
+RUN ln -s /usr/bin/nodejs /usr/bin/node
+
+#########################################################3
+###
+###    JAVA
+###
+
+ARG JAVA_URL=http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
+ARG JAVA_DIR=/usr/local/java
+ARG JAVA_VER=jdk1.8.0_131
+
+RUN mkdir -p $JAVA_DIR && cd $JAVA_DIR \
+  && (curl -Lsb "oraclelicense=accept-securebackup-cookie" $JAVA_URL | tar zx) \
+  && update-alternatives --install "/usr/bin/java" "java" "$JAVA_DIR/$JAVA_VER/bin/java" 1 \
+  && update-alternatives --install "/usr/bin/javac" "javac" "$JAVA_DIR/$JAVA_VER/bin/javac" 1
+
+RUN mkdir -p $JAVA_DIR/lib && cd $JAVA_DIR/lib \
+  && curl -LsO http://search.maven.org/remotecontent?filepath=junit/junit/4.12/junit-4.12.jar \
+  && curl -LsO http://search.maven.org/remotecontent?filepath=org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar
+
+# install maven
+RUN wget --no-verbose -O /tmp/apache-maven-3.3.9-bin.tar.gz http://www-eu.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
+RUN tar xzf /tmp/apache-maven-3.3.9-bin.tar.gz -C /opt/
+RUN ln -s /opt/apache-maven-3.3.9 /opt/maven
+RUN ln -s /opt/maven/bin/mvn /usr/local/bin
+RUN rm -f /tmp/apache-maven-3.3.9.tar.gz
+ENV MAVEN_HOME /opt/maven
+
+
+#########################################################3
+###
+###    APPIUM
+###
+
+#RUN apt-get install -y sudo build-essential
+#RUN curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+RUN npm install -y -g appium@1.6.5
+
+
+#########################################################3
+###
+###    ANDROID
+###
+
+ENV SDK_VERSION=25.2.3 
+ENV ANDROID_BUILD_TOOLS_VERSION=25.0.3 
+ENV ANDROID_HOME=/Android/Sdk
+ENV PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
+ENV AVD_VERSION=25
+ENV ANDROID_COMPONENTS android-$AVD_VERSION,sys-img-x86-google_apis-$AVD_VERSION
+#ENV ANDROID_COMPONENTS android-$AVD_VERSION,sys-img-armeabi-v7a-android-$AVD_VERSION
+
+WORKDIR $ANDROID_HOME
+RUN wget -O tools.zip https://dl.google.com/android/repository/tools_r${SDK_VERSION}-linux.zip && \
+    unzip tools.zip && rm tools.zip && \
+    chmod a+x -R $ANDROID_HOME && \
+    chown -R root:root $ANDROID_HOME
+
+#update Android SDK - platform-tools, build-tools
+RUN echo y | ${ANDROID_HOME}/tools/android update sdk -a -u -t platform-tools,build-tools-${ANDROID_BUILD_TOOLS_VERSION}
+
+# update Android SDK - avd image
+RUN echo y | android update sdk --all --force --no-ui --filter ${ANDROID_COMPONENTS}
+
+
+# create Android Virtual Device
+RUN echo y | android create avd --force --name android-$AVD_VERSION --target android-$AVD_VERSION \
+  --device "Nexus S" --name "nexus" --abi "google_apis/x86" --skin WVGA800
+#  --device "Nexus S" --name "nexus" --abi "armeabi-v7a" --skin WVGA800
+
+
+#########################################################3
+###
+###    Grading Base Scripts
+###
+
+RUN apt-get install -y curl python-pip
+RUN pip install requests
+RUN git clone https://github.com/apluslms/grading-base.git /grading-base
+ENV PATH=$PATH:/grading-base/bin
+
+RUN mkdir -p /feedback
+
+
+#########################################################3
+###
+###    CLEANING
+###
+
+RUN apt-get clean
+
+#########################################################3
+###
+###    RUN
+###
+
+EXPOSE 4723
