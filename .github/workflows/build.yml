@@ -8,7 +8,7 @@ jobs:
     - name: Publish to Registry
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
-        name: djb7/grader
+        name: aolecloudscape/android-grader
         cache: true
         dockerfile: Dockerfile.x86
         username: ${{ secrets.DOCKER_USERNAME }}
