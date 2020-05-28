@@ -13,4 +13,4 @@ jobs:
         dockerfile: Dockerfile.x86
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-	snapshot: true
+        snapshot: true
