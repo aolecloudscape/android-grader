@@ -92,8 +92,8 @@ RUN git clone https://github.com/apluslms/grading-base.git /grading-base
 WORKDIR /grading-base
 RUN git reset --hard a13b776
 ENV PATH=$PATH:/grading-base/bin
-
-RUN mkdir -p /feedback
+RUN mkdir -p /feedback /screenshots
+RUN chmod 0770 /feedback /screenshots
 
 
 #########################################################3
