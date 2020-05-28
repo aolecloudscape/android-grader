@@ -89,6 +89,8 @@ RUN echo y | android create avd --force --name android-$AVD_VERSION --target and
 RUN apt-get install -y curl python-pip
 RUN pip install requests
 RUN git clone https://github.com/apluslms/grading-base.git /grading-base
+WORKDIR /grading-base
+RUN git reset --hard a13b776
 ENV PATH=$PATH:/grading-base/bin
 
 RUN mkdir -p /feedback
